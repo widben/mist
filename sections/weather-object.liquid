@@ -1,0 +1,187 @@
+{%- style -%}
+    weather-object {
+        position: relative;
+        display: block;
+    }
+
+    /* div:empty display none - really shopify? */
+    weather-object > div {
+        display: block !important;
+        position: relative;
+    }
+
+    weather-object .weatherSectionCollapsible {
+        border-bottom: 1px rgb(102, 102, 102) solid;
+    }
+
+    weather-object .weatherSectionCollapsible:first-child {
+        border-top: 1px rgb(102, 102, 102) solid;
+    }
+
+    weather-object .weatherSectionCollapsible > button {
+        width: 100%;
+        background: none;
+        border: none;
+        text-align: left;
+        font-weight: bold;
+        cursor: pointer;
+        padding: 1em 0 1em 0;
+    }
+
+    weather-object .weatherSectionCollapsible > button::before, button::after {
+        position: absolute;
+        right: 0;
+        font-weight: normal;
+
+        transition: 0.4s ease-in-out;
+    }
+
+    weather-object .weatherSectionCollapsible > button::before {
+        content: '+';
+        opacity: 1;
+    }
+
+    weather-object .weatherSectionCollapsible > button::after {
+        content: '-';
+        transform: rotate(-90deg);
+        opacity: 0;
+    }
+
+    weather-object .weatherSectionCollapsible .weatherSectionContent {
+        overflow: hidden;
+        transition: height 0.35s ease-in-out, visibility 0s ease-in-out 0.35s;
+    }
+
+    weather-object .weatherSectionCollapsible.open .weatherSectionContent {
+        height: auto;
+    }
+
+    weather-object .weatherSectionCollapsible.open > button::before {
+        transform: rotate(90deg);
+        opacity: 0;
+    }
+
+    weather-object .weatherSectionCollapsible.open > button::after {
+        transform: rotate(0deg);
+        opacity: 1;
+    }
+{%- endstyle -%}
+
+<weather-object class="page-width">
+    <div ref="weatherSectionContainer" data-api-key="{{ section.settings.apiKey }}" data-api-city="{{ section.settings.apiCity }}">
+        <div 
+            class="weatherSectionCollapsible" 
+            :class="{
+                open: itemsOpen[index]
+            }" 
+            v-for="(value, key, index) in items"
+            :key="key"
+        >
+            <button @click="openCollapsible(index)">${ key }</button>
+            <div 
+                class="weatherSectionContent"
+                ref="weatherSectionContent"
+                :style="{
+                    height: itemsOpen[index] ? itemsOpen[index] + 'px' : '0px'
+                }"
+            >
+                <pre>${ JSON.stringify(value, null, 2) }</pre>
+            </div>
+        </div>
+    </div>
+</weather-object>
+
+{% javascript %}
+    class WeatherObject extends HTMLElement {
+        app;
+
+        constructor() {
+            super();
+        }
+
+        connectedCallback() {
+            this.app = Vue.createApp({
+                data() {
+                    return {
+                        isLoading: false,
+                        items: null,
+                        itemsOpen: [],
+                    }
+                },
+                mounted() {
+                    // check if immediate fetch is necessary
+                    this.getPosition()
+
+                    // add scroll event listener
+                    document.addEventListener("scroll", this.getPosition)
+                },
+                unmount() {
+                    document.removeEventListener("scroll", this.getPosition)
+                },
+                methods: {
+                    getPosition() {
+                        const containerTop = this.$refs.weatherSectionContainer.getBoundingClientRect().top
+
+                        if (containerTop !== 0 && (containerTop - 10 < window.innerHeight)) this.loadData()
+                    },
+                    loadData() {
+                        if (!this.isLoading && !this.items) {
+                            const apiKey = this.$refs.weatherSectionContainer.dataset.apiKey
+                            const apiCity = this.$refs.weatherSectionContainer.dataset.apiCity
+
+                            // set loading state
+                            this.isLoading = true
+
+                            fetch("http://api.openweathermap.org/data/2.5/weather?q=" + apiCity + "&APPID=" + apiKey).then(response => (response.json())).then(data => {
+                                this.items = data
+
+                                // remove event listener after successfull fetch
+                                document.removeEventListener("scroll", this.getPosition)
+                            }).finally(() => {
+                                // always set isLoading to false, if fetching fails we try again on another scroll event
+                                this.isLoading = false
+                            })
+                        }
+                    },
+                    openCollapsible(index) {
+                        // set height if opened
+                        if (this.itemsOpen[index] === undefined || this.itemsOpen[index] === 0) {
+                            this.itemsOpen[index] = this.$refs.weatherSectionContent[index].scrollHeight
+                        } else {
+                            this.itemsOpen[index] = 0
+                        }
+                    }
+                },
+                // liquid compatible delimiters
+                delimiters: ['${', '}']
+            }).mount('weather-object')
+        }
+
+        disconnectedCallback() {
+            this.app.unmount()
+        }
+    }
+
+    customElements.define('weather-object', WeatherObject);
+{% endjavascript %}
+
+{% schema %}
+{
+    "name": "Weather Object",
+    "tag": "section",
+    "settings": [
+        {
+            "type": "text",
+            "id": "apiKey",
+            "label": "OpenWeather API key",
+            "info": "Get an API key at https://openweathermap.org/"
+        },
+        {
+            "type": "text",
+            "id": "apiCity",
+            "label": "OpenWeather City",
+            "info": "Enter the city name for which weather information should be fetched"    
+        }
+    ]
+}
+{% endschema %}

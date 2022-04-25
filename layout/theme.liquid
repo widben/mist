@@ -208,6 +208,7 @@
       document.documentElement.classList.add('shopify-design-mode');
     }
     </script>
+
   </head>
 
   <body class="gradient">
@@ -258,5 +259,7 @@
     {%- if settings.predictive_search_enabled -%}
       <script src="{{ 'predictive-search.js' | asset_url }}" defer="defer"></script>
     {%- endif -%}
+
+    <script async src="https://unpkg.com/vue@3"></script>
   </body>
 </html>

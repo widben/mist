@@ -110,6 +110,13 @@
         "padding_bottom": 12
       }
     },
+    "weather-object": {
+      "type": "weather-object",
+      "settings": {
+        "apiKey": "d0c5ddd8e2e617013423b864803fe739",
+        "apiCity": "Klagenfurt"
+      }
+    },
     "image-with-text": {
       "type": "image-with-text",
       "blocks": {
@@ -207,6 +214,7 @@
   },
   "order": [
     "main",
+    "weather-object",
     "image-with-text",
     "multicolumn",
     "product-recommendations"

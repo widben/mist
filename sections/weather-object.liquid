@@ -1,23 +1,23 @@
 {%- style -%}
-    weather-object {
+    .weatherObject {
         position: relative;
         display: block;
     }
 
-    weather-object .weatherSectionContainer {
+    .weatherObject .weatherSectionContainer {
         position: relative;
         display: none;
     }
 
-    weather-object .weatherSectionCollapsible {
+    .weatherObject .weatherSectionCollapsible {
         border-bottom: 1px rgb(102, 102, 102) solid;
     }
 
-    weather-object .weatherSectionCollapsible:first-child {
+    .weatherObject .weatherSectionCollapsible:first-child {
         border-top: 1px rgb(102, 102, 102) solid;
     }
 
-    weather-object .weatherSectionCollapsible > button {
+    .weatherObject .weatherSectionCollapsible > button {
         width: 100%;
         background: none;
         border: none;
@@ -27,7 +27,7 @@
         padding: 1em 0 1em 0;
     }
 
-    weather-object .weatherSectionCollapsible > button::before, button::after {
+    .weatherObject .weatherSectionCollapsible > button::before, button::after {
         position: absolute;
         right: 0;
         font-weight: normal;
@@ -35,38 +35,37 @@
         transition: 0.4s ease-in-out;
     }
 
-    weather-object .weatherSectionCollapsible > button::before {
+    .weatherObject .weatherSectionCollapsible > button::before {
         content: '+';
         opacity: 1;
     }
 
-    weather-object .weatherSectionCollapsible > button::after {
+    .weatherObject .weatherSectionCollapsible > button::after {
         content: '-';
         transform: rotate(-90deg);
         opacity: 0;
     }
 
-    weather-object .weatherSectionCollapsible .weatherSectionContent {
+    .weatherObject .weatherSectionCollapsible .weatherSectionContent {
         overflow: hidden;
         transition: height 0.35s ease-in-out, visibility 0s ease-in-out 0.35s;
     }
 
-    weather-object .weatherSectionCollapsible.open .weatherSectionContent {
+    .weatherObject .weatherSectionCollapsible.open .weatherSectionContent {
         height: auto;
     }
 
-    weather-object .weatherSectionCollapsible.open > button::before {
+    .weatherObject .weatherSectionCollapsible.open > button::before {
         transform: rotate(90deg);
         opacity: 0;
     }
 
-    weather-object .weatherSectionCollapsible.open > button::after {
+    .weatherObject .weatherSectionCollapsible.open > button::after {
         transform: rotate(0deg);
         opacity: 1;
     }
 {%- endstyle -%}
-
-<weather-object class="page-width">
+<div class="weatherObject page-width" id="{{ section.id }}-app">
     <div 
         class="weatherSectionContainer" 
         v-bind:class="{
@@ -99,83 +98,71 @@
             </div>
         </div>
     </div>
-</weather-object>
+</div>
 
 {% javascript %}
-    class WeatherObject extends HTMLElement {
-        app;
-
-        constructor() {
-            super();
-        }
-
-        connectedCallback() {
-            this.app = Vue.createApp({
-                data() {
-                    return {
-                        isReady: true,
-                        isLoading: false,
-                        items: null,
-                        itemsOpen: [],
-                    }
-                },
-                mounted() {
-                    // check if immediate fetch is necessary
-                    this.getPosition()
-
-                    // add scroll event listener
-                    document.addEventListener("scroll", this.getPosition)
-                },
-                unmount() {
-                    document.removeEventListener("scroll", this.getPosition)
-                },
-                methods: {
-                    getPosition() {
-                        const containerTop = this.$refs.weatherSectionContainer.getBoundingClientRect().top
-
-                        if (containerTop !== 0 && (containerTop - 10 < window.innerHeight)) this.loadData()
-                    },
-                    loadData() {
-                        if (!this.isLoading && !this.items) {
-                            const apiKey = this.$refs.weatherSectionContainer.dataset.apiKey
-                            const apiCity = this.$refs.weatherSectionContainer.dataset.apiCity
-
-                            // set loading state
-                            this.isLoading = true
-
-                            fetch("http://api.openweathermap.org/data/2.5/weather?q=" + apiCity + "&APPID=" + apiKey).then(response => (response.json())).then(data => {
-                                this.items = data
-
-                                // remove event listener after successfull fetch
-                                document.removeEventListener("scroll", this.getPosition)
-                            }).finally(() => {
-                                // always set isLoading to false, if fetching fails we try again on another scroll event
-                                this.isLoading = false
-                            })
-                        }
-                    },
-                    openCollapsible(index) {
-                        // set height if opened
-                        if (this.itemsOpen[index] === undefined || this.itemsOpen[index] === 0) {
-                            this.itemsOpen[index] = this.$refs.weatherSectionContent[index].scrollHeight
-                        } else {
-                            this.itemsOpen[index] = 0
-                        }
-                    }
-                },
-                // liquid compatible delimiters
-                delimiters: ['${', '}']
-            }).mount('weather-object')
-        }
-
-        disconnectedCallback() {
-            this.app.unmount()
-        }
-    }
-
     document.onreadystatechange = () => { 
-        if (document.readyState == "complete") { 
-            customElements.define('weather-object', WeatherObject);
+        if (document.readyState == "complete") {
+            const weatherObjects = document.getElementsByClassName("weatherObject")
+
+            for (let i = 0; i < weatherObjects.length; i++) {
+                Vue.createApp({
+                    data() {
+                        return {
+                            isReady: true,
+                            isLoading: false,
+                            items: null,
+                            itemsOpen: [],
+                        }
+                    },
+                    mounted() {
+                        // check if immediate fetch is necessary
+                        this.getPosition()
+
+                        // add scroll event listener
+                        document.addEventListener("scroll", this.getPosition)
+                    },
+                    unmount() {
+                        document.removeEventListener("scroll", this.getPosition)
+                    },
+                    methods: {
+                        getPosition() {
+                            const containerTop = this.$refs.weatherSectionContainer.getBoundingClientRect().top
+
+                            if (containerTop !== 0 && (containerTop - 10 < window.innerHeight)) this.loadData()
+                        },
+                        loadData() {
+                            if (!this.isLoading && !this.items) {
+                                const apiKey = this.$refs.weatherSectionContainer.dataset.apiKey
+                                const apiCity = this.$refs.weatherSectionContainer.dataset.apiCity
+
+                                // set loading state
+                                this.isLoading = true
+
+                                fetch("http://api.openweathermap.org/data/2.5/weather?q=" + apiCity + "&APPID=" + apiKey).then(response => (response.json())).then(data => {
+                                    this.items = data
+
+                                    // remove event listener after successfull fetch
+                                    document.removeEventListener("scroll", this.getPosition)
+                                }).finally(() => {
+                                    // always set isLoading to false, if fetching fails we try again on another scroll event
+                                    this.isLoading = false
+                                })
+                            }
+                        },
+                        openCollapsible(index) {
+                            // set height if opened
+                            if (this.itemsOpen[index] === undefined || this.itemsOpen[index] === 0) {
+                                this.itemsOpen[index] = this.$refs.weatherSectionContent[index].scrollHeight
+                            } else {
+                                this.itemsOpen[index] = 0
+                            }
+                        }
+                    },
+                    // liquid compatible delimiters
+                    delimiters: ['${', '}']
+                }).mount('#' + weatherObjects[i].id)
+            }
         } 
     }
 {% endjavascript %}

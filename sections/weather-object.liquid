@@ -4,10 +4,9 @@
         display: block;
     }
 
-    /* div:empty display none - really shopify? */
-    weather-object > div {
-        display: block !important;
+    weather-object .weatherSectionContainer {
         position: relative;
+        display: none;
     }
 
     weather-object .weatherSectionCollapsible {
@@ -68,10 +67,21 @@
 {%- endstyle -%}
 
 <weather-object class="page-width">
-    <div ref="weatherSectionContainer" data-api-key="{{ section.settings.apiKey }}" data-api-city="{{ section.settings.apiCity }}">
+    <div 
+        class="weatherSectionContainer" 
+        v-bind:class="{
+            ready: isReady
+        }" 
+        ref="weatherSectionContainer" 
+        data-api-key="{{ section.settings.apiKey }}" 
+        data-api-city="{{ section.settings.apiCity }}"
+        v-bind:style="{
+            display: isReady ? 'block' : 'none'
+        }"
+    >
         <div 
             class="weatherSectionCollapsible" 
-            :class="{
+            v-bind:class="{
                 open: itemsOpen[index]
             }" 
             v-for="(value, key, index) in items"
@@ -81,7 +91,7 @@
             <div 
                 class="weatherSectionContent"
                 ref="weatherSectionContent"
-                :style="{
+                v-bind:style="{
                     height: itemsOpen[index] ? itemsOpen[index] + 'px' : '0px'
                 }"
             >
@@ -103,6 +113,7 @@
             this.app = Vue.createApp({
                 data() {
                     return {
+                        isReady: true,
                         isLoading: false,
                         items: null,
                         itemsOpen: [],
@@ -162,7 +173,11 @@
         }
     }
 
-    customElements.define('weather-object', WeatherObject);
+    document.onreadystatechange = () => { 
+        if (document.readyState == "complete") { 
+            customElements.define('weather-object', WeatherObject);
+        } 
+    }
 {% endjavascript %}
 
 {% schema %}

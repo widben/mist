@@ -103,6 +103,7 @@
 {% javascript %}
     document.onreadystatechange = () => { 
         if (document.readyState == "complete") {
+ console.log("state completed!");
             const weatherObjects = document.getElementsByClassName("weatherObject")
 
             for (let i = 0; i < weatherObjects.length; i++) {
@@ -117,7 +118,7 @@
                         }
                     },
                     mounted() {
-                                                      console.log("mounted!");
+                                                     
                         // check if immediate fetch is necessary
                         this.getPosition()
 
